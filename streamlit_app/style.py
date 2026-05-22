@@ -25,7 +25,8 @@ CHART_LAYOUT = dict(
 CSS = """
 <style>
 #MainMenu, footer {visibility: hidden;}
-.block-container {padding-top: 1.5rem; padding-bottom: 2rem;}
+header[data-testid="stHeader"] {background: transparent;}
+.block-container {padding-top: 3.5rem; padding-bottom: 2rem;}
 [data-testid="metric-container"] {
     background-color: #161b22;
     border: 1px solid #21262d;
