@@ -1,0 +1,34 @@
+version: 2
+
+models:
+  - name: fct_market_summary
+    description: "One row per ticker with latest price and key metrics"
+    columns:
+      - name: ticker
+        description: "Yahoo Finance ticker symbol"
+        data_tests:
+          - not_null
+          - unique
+      - name: latest_price
+        description: "Most recent closing price"
+        data_tests:
+          - not_null
+      - name: latest_date
+        description: "Date of the latest price"
+        data_tests:
+          - not_null
+
+  - name: fct_returns_history
+    description: "Full price and returns history for all tickers"
+    columns:
+      - name: ticker
+        data_tests:
+          - not_null
+      - name: price_date
+        data_tests:
+          - not_null
+      - name: close_price
+        data_tests:
+          - not_null
+      - name: daily_return
+        description: "Daily return — NULL only for the first row per ticker (no previous price)"

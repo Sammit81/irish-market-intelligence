@@ -65,3 +65,19 @@ jobs:
       - name: Run dbt models
         working-directory: dbt_project
         run: uv run dbt run
+
+      - name: Run dbt tests
+        working-directory: dbt_project
+        run: uv run dbt test
+
+      - name: Check for price alerts (>5% daily move)
+        env:
+          SNOWFLAKE_ACCOUNT:   ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER:      ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD:  ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE:  ${{ secrets.SNOWFLAKE_DATABASE }}
+          SNOWFLAKE_SCHEMA:    ${{ secrets.SNOWFLAKE_SCHEMA }}
+          ALERT_EMAIL:         ${{ secrets.ALERT_EMAIL }}
+          SMTP_PASSWORD:       ${{ secrets.SMTP_PASSWORD }}
+        run: uv run data_pipeline/price_alerts.py
