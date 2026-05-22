@@ -8,25 +8,17 @@ import streamlit as st
 import plotly.graph_objects as go
 import plotly.express as px
 import pandas as pd
-import os
-from dotenv import load_dotenv
-import snowflake.connector
-
-load_dotenv()
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from connection import get_snowflake_connection
 
 st.set_page_config(page_title="Compare Assets | IMID", page_icon="⚖️", layout="wide")
 
 
 @st.cache_resource
 def get_connection():
-    return snowflake.connector.connect(
-        account   = os.environ["SNOWFLAKE_ACCOUNT"],
-        user      = os.environ["SNOWFLAKE_USER"],
-        password  = os.environ["SNOWFLAKE_PASSWORD"],
-        warehouse = os.environ["SNOWFLAKE_WAREHOUSE"],
-        database  = os.environ["SNOWFLAKE_DATABASE"],
-        schema    = os.environ["SNOWFLAKE_SCHEMA"],
-    )
+    return get_snowflake_connection()
 
 
 @st.cache_data(ttl=3600)

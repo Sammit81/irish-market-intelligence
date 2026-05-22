@@ -16,11 +16,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import snowflake.connector
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
+from connection import get_snowflake_connection
 
 st.set_page_config(
     page_title="Irish Market Intelligence Dashboard",
@@ -31,15 +27,7 @@ st.set_page_config(
 
 @st.cache_resource
 def get_connection():
-    """Cache the Snowflake connection so it's reused across page interactions."""
-    return snowflake.connector.connect(
-        account   = os.environ["SNOWFLAKE_ACCOUNT"],
-        user      = os.environ["SNOWFLAKE_USER"],
-        password  = os.environ["SNOWFLAKE_PASSWORD"],
-        warehouse = os.environ["SNOWFLAKE_WAREHOUSE"],
-        database  = os.environ["SNOWFLAKE_DATABASE"],
-        schema    = os.environ["SNOWFLAKE_SCHEMA"],
-    )
+    return get_snowflake_connection()
 
 
 @st.cache_data(ttl=3600)
