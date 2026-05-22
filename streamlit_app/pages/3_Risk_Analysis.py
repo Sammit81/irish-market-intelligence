@@ -21,8 +21,12 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from connection import get_snowflake_connection
+from style import apply_global_css, sidebar_info, CHART_LAYOUT, GREEN, RED
 
 st.set_page_config(page_title="Risk Analysis | IMID", page_icon="📉", layout="wide")
+
+apply_global_css()
+sidebar_info()
 
 
 @st.cache_resource
@@ -36,7 +40,7 @@ def load_returns(days: int) -> pd.DataFrame:
     cur  = conn.cursor()
     cur.execute(f"""
         SELECT NAME, PRICE_DATE, DAILY_RETURN, VOLATILITY_30D
-        FROM FCT_RETURNS_HISTORY
+        FROM FINANCIAL_MARKETS.PUBLIC.FCT_RETURNS_HISTORY
         WHERE PRICE_DATE >= DATEADD('day', -{days}, CURRENT_DATE())
           AND DAILY_RETURN IS NOT NULL
         ORDER BY NAME, PRICE_DATE
@@ -48,7 +52,7 @@ def load_returns(days: int) -> pd.DataFrame:
 def load_summary() -> pd.DataFrame:
     conn = get_connection()
     cur  = conn.cursor()
-    cur.execute("SELECT NAME, LATEST_PRICE, VOLATILITY_30D, YTD_RETURN, DAILY_RETURN FROM FCT_MARKET_SUMMARY")
+    cur.execute("SELECT NAME, LATEST_PRICE, VOLATILITY_30D, YTD_RETURN, DAILY_RETURN FROM FINANCIAL_MARKETS.PUBLIC.FCT_MARKET_SUMMARY")
     return cur.fetch_pandas_all()
 
 
@@ -96,7 +100,7 @@ fig = px.bar(
     text  = vol_df["VOL_PCT"].map(lambda x: f"{x:.1f}%"),
 )
 fig.update_traces(textposition="outside")
-fig.update_layout(height=450, legend_title="Risk Level")
+fig.update_layout(**CHART_LAYOUT, height=450, legend_title="Risk Level")
 st.plotly_chart(fig, use_container_width=True)
 
 # ── Correlation heatmap ───────────────────────────────────────────────────────

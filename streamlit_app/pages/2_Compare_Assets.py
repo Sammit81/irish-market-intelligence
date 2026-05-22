@@ -12,8 +12,12 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from connection import get_snowflake_connection
+from style import apply_global_css, sidebar_info, CHART_LAYOUT, GREEN, RED
 
 st.set_page_config(page_title="Compare Assets | IMID", page_icon="⚖️", layout="wide")
+
+apply_global_css()
+sidebar_info()
 
 
 @st.cache_resource
@@ -27,7 +31,7 @@ def load_all_history(days: int) -> pd.DataFrame:
     cur  = conn.cursor()
     cur.execute(f"""
         SELECT TICKER, NAME, PRICE_DATE, CLOSE_PRICE, DAILY_RETURN, VOLATILITY_30D
-        FROM FCT_RETURNS_HISTORY
+        FROM FINANCIAL_MARKETS.PUBLIC.FCT_RETURNS_HISTORY
         WHERE PRICE_DATE >= DATEADD('day', -{days}, CURRENT_DATE())
         ORDER BY TICKER, PRICE_DATE
     """)
@@ -38,7 +42,7 @@ def load_all_history(days: int) -> pd.DataFrame:
 def load_summary() -> pd.DataFrame:
     conn = get_connection()
     cur  = conn.cursor()
-    cur.execute("SELECT * FROM FCT_MARKET_SUMMARY")
+    cur.execute("SELECT * FROM FINANCIAL_MARKETS.PUBLIC.FCT_MARKET_SUMMARY")
     return cur.fetch_pandas_all()
 
 
@@ -103,7 +107,7 @@ for i, name in enumerate(selected_names):
 
 fig.add_hline(y=100, line_dash="dot", line_color="grey", opacity=0.5,
               annotation_text="Starting point")
-fig.update_layout(
+fig.update_layout(**CHART_LAYOUT,
     height=450,
     yaxis_title="Value of £100 invested",
     xaxis_title="",
@@ -160,7 +164,7 @@ fig2.update_traces(
     marker=dict(size=14),
 )
 fig2.add_hline(y=0, line_dash="dash", line_color="grey", opacity=0.5)
-fig2.update_layout(
+fig2.update_layout(**CHART_LAYOUT,
     height=400,
     xaxis_tickformat=".0%",
     yaxis_tickformat=".0%",

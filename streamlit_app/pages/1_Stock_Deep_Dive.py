@@ -18,8 +18,12 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from connection import get_snowflake_connection
+from style import apply_global_css, sidebar_info, CHART_LAYOUT, GREEN, RED
 
 st.set_page_config(page_title="Stock Deep Dive | IMID", page_icon="🔍", layout="wide")
+
+apply_global_css()
+sidebar_info()
 
 
 @st.cache_resource
@@ -31,7 +35,7 @@ def get_connection():
 def load_tickers():
     conn = get_connection()
     cur  = conn.cursor()
-    cur.execute("SELECT DISTINCT TICKER, NAME FROM FCT_RETURNS_HISTORY ORDER BY NAME")
+    cur.execute("SELECT DISTINCT TICKER, NAME FROM FINANCIAL_MARKETS.PUBLIC.FCT_RETURNS_HISTORY ORDER BY NAME")
     return cur.fetch_pandas_all()
 
 
@@ -43,8 +47,8 @@ def load_ohlcv(ticker: str, days: int) -> pd.DataFrame:
         SELECT p.PRICE_DATE, p.OPEN_PRICE, p.HIGH_PRICE, p.LOW_PRICE,
                p.CLOSE_PRICE, p.VOLUME, r.DAILY_RETURN, r.MA_7D, r.MA_30D,
                r.VOLATILITY_30D, r.CUMULATIVE_RETURN
-        FROM STG_PRICES p
-        JOIN FCT_RETURNS_HISTORY r
+        FROM FINANCIAL_MARKETS.PUBLIC.STG_PRICES p
+        JOIN FINANCIAL_MARKETS.PUBLIC.FCT_RETURNS_HISTORY r
           ON p.TICKER = r.TICKER AND p.PRICE_DATE = r.PRICE_DATE
         WHERE p.TICKER = '{ticker}'
           AND p.PRICE_DATE >= DATEADD('day', -{days}, CURRENT_DATE())
@@ -140,7 +144,7 @@ fig.add_trace(go.Bar(
     name="Volume", marker_color=colors, opacity=0.7
 ), row=2, col=1)
 
-fig.update_layout(
+fig.update_layout(**CHART_LAYOUT,
     height=600,
     xaxis_rangeslider_visible=False,
     showlegend=True,
@@ -161,7 +165,7 @@ fig2.add_trace(go.Histogram(
     name="Daily returns"
 ))
 fig2.add_vline(x=0, line_dash="dash", line_color="red")
-fig2.update_layout(
+fig2.update_layout(**CHART_LAYOUT,
     xaxis_title="Daily Return (%)",
     yaxis_title="Frequency",
     height=300,
