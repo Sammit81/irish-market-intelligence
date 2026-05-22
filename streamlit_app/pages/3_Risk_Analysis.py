@@ -74,13 +74,25 @@ st.subheader("🌡️ Risk Level by Asset")
 st.info(
     "**How to read this:** Longer bar = more volatile = higher risk. "
     "Indices like S&P 500 tend to be less volatile than individual stocks. "
-    "Volatility is measured as the annualised standard deviation of daily returns."
+    "Volatility is calculated from daily returns over your selected period — "
+    "so changing the period above updates this chart."
 )
 
-vol_df = summary.dropna(subset=["VOLATILITY_30D"]).sort_values("VOLATILITY_30D", ascending=True).copy()
-vol_df["VOL_PCT"] = vol_df["VOLATILITY_30D"] * 100
+# Calculate volatility from daily returns over the selected period
+# std(daily_returns) * sqrt(252) = annualised volatility
+# This correctly reflects the chosen period, unlike the fixed 30-day value in the summary
+vol_df = (
+    df.groupby("NAME")["DAILY_RETURN"]
+    .std()
+    .mul(np.sqrt(252))
+    .reset_index()
+    .rename(columns={"DAILY_RETURN": "VOLATILITY"})
+    .dropna()
+    .sort_values("VOLATILITY", ascending=True)
+)
+vol_df["VOL_PCT"] = vol_df["VOLATILITY"] * 100
 vol_df["RISK_LABEL"] = pd.cut(
-    vol_df["VOLATILITY_30D"],
+    vol_df["VOLATILITY"],
     bins  = [0, 0.15, 0.25, 1.0],
     labels= ["🟢 Low Risk", "🟡 Medium Risk", "🔴 High Risk"]
 )
@@ -90,6 +102,7 @@ fig = px.bar(
     x     = "VOL_PCT",
     y     = "NAME",
     color = "RISK_LABEL",
+    hover_data={"VOL_PCT": ":.1f"},
     color_discrete_map={
         "🟢 Low Risk":    "green",
         "🟡 Medium Risk": "orange",
