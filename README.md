@@ -8,7 +8,7 @@ A live financial markets dashboard tracking 28 assets across Irish, European, an
 
 ## What makes this different from static portfolio projects
 
-The data updates automatically every day. The pipeline fetches fresh prices from Yahoo Finance, loads them into Snowflake, runs the dbt transformation layer, and the dashboard reflects current market conditions without any manual work. This is what a production analytics pipeline looks like at a smaller scale.
+The data updates automatically every 6 hours via GitHub Actions (00:00, 06:00, 12:00, 18:00 UTC). The pipeline fetches fresh prices from Yahoo Finance, loads them into Snowflake, runs the dbt transformation layer, and the dashboard reflects current market conditions without any manual work. This is what a production analytics pipeline looks like at a smaller scale.
 
 ---
 
@@ -92,6 +92,7 @@ Colour-coded volatility ranking (🟢 Low / 🟡 Medium / 🔴 High). Correlatio
 | **Snowflake** | Cloud warehouse | Industry standard in Dublin. Native Streamlit connector, scales without configuration. |
 | **dbt** | Transformation | Replaces manual SQL scripts. Manages dependencies, enables testing, generates lineage documentation. Every mart is a tested, documented model. |
 | **Streamlit** | Web app | Write Python, get an interactive web app. Free deployment on Streamlit Cloud with a permanent public URL. |
+| **GitHub Actions** | Automation | Scheduled workflow runs `fetch_prices.py` + `dbt run` every 6 hours. No manual work needed to keep data current. |
 
 ---
 
@@ -125,8 +126,8 @@ Open `http://localhost:8501`.
 
 ## What I'd Do Next
 
-- **GitHub Actions**: schedule `fetch_prices.py` + `dbt run` daily at 7am so Snowflake always has fresh data without manual runs
-- **dbt tests**: add schema tests (`not_null`, `unique`, `accepted_values`) to catch data quality issues automatically
-- **Alerts**: email or Slack notification when any Irish stock moves >5% in a day
+- **dbt tests**: add schema tests (`not_null`, `unique`, `accepted_values`) to catch data quality issues automatically before they reach the dashboard
+- **Price alerts**: email or Slack notification when any Irish stock moves >5% in a day
 - **Portfolio tracker**: let users input their own holdings and track P&L against current prices
 - **dbt documentation**: run `dbt docs generate` and host the lineage graph — shows the full dependency chain from raw data to dashboard
+- **More Irish coverage**: add options data and short interest for Irish stocks to surface sentiment signals
