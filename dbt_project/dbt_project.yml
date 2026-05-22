@@ -1,0 +1,28 @@
+# dbt_project.yml — the main config file for dbt.
+#
+# What dbt does:
+#   Instead of running SQL files manually like we did in the previous projects,
+#   dbt manages all your SQL models as a dependency graph. You write SELECT
+#   statements, dbt figures out the order to run them, adds tests, and
+#   generates documentation automatically.
+#
+# Every model (SQL file) in dbt becomes a table or view in Snowflake.
+
+name: "financial_markets"
+version: "1.0.0"
+profile: "financial_markets"   # matches profiles.yml
+
+model-paths: ["models"]
+test-paths:  ["tests"]
+macro-paths: ["macros"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  financial_markets:
+    staging:
+      +materialized: view       # staging = views (no storage cost, always fresh)
+    intermediate:
+      +materialized: view
+    marts:
+      +materialized: table      # marts = tables (pre-computed, fast for Streamlit)

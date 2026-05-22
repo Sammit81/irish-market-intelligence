@@ -1,0 +1,17 @@
+# Environment
+.env
+.venv/
+__pycache__/
+*.pyc
+
+# dbt
+dbt_project/target/
+dbt_project/dbt_packages/
+dbt_project/logs/
+profiles.yml
+
+# OS
+.DS_Store
+
+# Streamlit
+.streamlit/secrets.toml
