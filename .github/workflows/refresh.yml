@@ -15,6 +15,9 @@ on:
     - cron: "0 */6 * * *"   # every 6 hours
   workflow_dispatch:          # also allows manual trigger from GitHub UI
 
+permissions:
+  contents: write   # needed to push dbt docs to gh-pages branch
+
 jobs:
   refresh:
     runs-on: ubuntu-latest
@@ -69,6 +72,17 @@ jobs:
       - name: Run dbt tests
         working-directory: dbt_project
         run: uv run dbt test
+
+      - name: Generate dbt docs
+        working-directory: dbt_project
+        run: uv run dbt docs generate
+
+      - name: Deploy dbt docs to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: dbt_project/target
+          destination_dir: dbt-docs
 
       - name: Check for price alerts (>5% daily move)
         env:

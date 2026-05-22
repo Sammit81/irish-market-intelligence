@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Irish Market Intelligence — Documentation</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; max-width: 700px; margin: 60px auto; padding: 0 20px; color: #e6edf3; background: #0d1117; }
+    h1 { color: #00c853; }
+    a { color: #00c853; }
+    .card { background: #161b22; border: 1px solid #21262d; border-radius: 10px; padding: 24px; margin: 20px 0; }
+    .card h2 { margin-top: 0; }
+    .badge { display: inline-block; background: #00c853; color: #000; border-radius: 4px; padding: 2px 8px; font-size: 0.8rem; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <h1>🇮🇪 Irish Market Intelligence</h1>
+  <p>Live financial markets dashboard tracking 28 Irish and global assets. Powered by Snowflake, dbt, and Streamlit.</p>
+
+  <div class="card">
+    <h2>📈 Live Dashboard <span class="badge">LIVE</span></h2>
+    <p>Interactive dashboard with market overview, stock deep dive, asset comparison, risk analysis, and portfolio tracker.</p>
+    <a href="https://irish-market-intelligence-ngkorhtqqvlho8qdmrsqfs.streamlit.app" target="_blank">
+      → Open Dashboard
+    </a>
+  </div>
+
+  <div class="card">
+    <h2>📊 dbt Data Lineage</h2>
+    <p>Full lineage graph showing how data flows from Yahoo Finance through Snowflake staging, intermediate, and mart models. Updated every 6 hours.</p>
+    <a href="./dbt-docs/index.html">→ View dbt Docs</a>
+  </div>
+
+  <div class="card">
+    <h2>💻 Source Code</h2>
+    <a href="https://github.com/Sammit81/irish-market-intelligence" target="_blank">→ GitHub Repository</a>
+  </div>
+</body>
+</html>
