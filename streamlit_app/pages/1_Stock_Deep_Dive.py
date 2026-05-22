@@ -31,7 +31,7 @@ def get_connection():
     return get_snowflake_connection()
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=21600)
 def load_tickers():
     conn = get_connection()
     cur  = conn.cursor()
@@ -39,7 +39,7 @@ def load_tickers():
     return cur.fetch_pandas_all()
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=21600)
 def load_ohlcv(ticker: str, days: int) -> pd.DataFrame:
     conn = get_connection()
     cur  = conn.cursor()
