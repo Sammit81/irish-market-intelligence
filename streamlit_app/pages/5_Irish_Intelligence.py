@@ -87,6 +87,7 @@ else:
                              y=rated_sorted["ANALYST_STRONG_SELL"],
                              marker_color="#ff1744"))
         fig.update_layout(**CHART_LAYOUT, barmode="stack", height=380,
+                          yaxis_title="Number of Analysts",
                           legend=dict(orientation="h", y=1.05))
         fig.update_xaxes(tickangle=-35)
         st.plotly_chart(fig, use_container_width=True)
