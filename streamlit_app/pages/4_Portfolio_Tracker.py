@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from connection import get_snowflake_connection
-from style import apply_global_css, sidebar_info, CHART_LAYOUT, GREEN, RED
+from style import apply_global_css, sidebar_info, CHART_LAYOUT, style_axes, GREEN, RED
 
 st.set_page_config(page_title="Portfolio Tracker | IMID", page_icon="💼", layout="wide")
 apply_global_css()
@@ -177,6 +177,7 @@ fig = px.bar(
     text=portfolio["P&L (%)"].map(lambda x: f"{x:+.1f}%"),
 )
 fig.update_layout(**CHART_LAYOUT, height=350, coloraxis_showscale=False)
+style_axes(fig)
 fig.update_traces(textposition="outside")
 st.plotly_chart(fig, use_container_width=True)
 
@@ -208,4 +209,5 @@ if not hist.empty:
                    annotation_text=f"Cost basis: £{total_cost:,.0f}")
     fig2.update_layout(**CHART_LAYOUT, height=350,
                        yaxis_title="Portfolio Value (£)", xaxis_title="")
+    style_axes(fig2)
     st.plotly_chart(fig2, use_container_width=True)

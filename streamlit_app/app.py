@@ -6,7 +6,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from connection import get_snowflake_connection
-from style import apply_global_css, sidebar_info, CHART_LAYOUT, GREEN, RED
+from style import apply_global_css, sidebar_info, CHART_LAYOUT, style_axes, GREEN, RED
 
 st.set_page_config(
     page_title="Irish Market Intelligence Dashboard",
@@ -107,6 +107,7 @@ with col_left:
         labels={"DAILY_RETURN_PCT": "Daily Return (%)", "NAME": ""},
     )
     fig.update_layout(**CHART_LAYOUT, height=500, coloraxis_showscale=False)
+    style_axes(fig)
     st.plotly_chart(fig, use_container_width=True)
 
 with col_right:
@@ -125,6 +126,7 @@ with col_right:
         labels={"YTD_PCT": "YTD Return (%)", "NAME": ""},
     )
     fig2.update_layout(**CHART_LAYOUT, height=500, coloraxis_showscale=False)
+    style_axes(fig2)
     fig2.update_xaxes(tickangle=-45)
     st.plotly_chart(fig2, use_container_width=True)
 
@@ -162,6 +164,7 @@ if not hist.empty:
                        xaxis_title="",
                        yaxis_title="Price",
                        legend=dict(orientation="h", y=1.05))
+    style_axes(fig3)
     st.plotly_chart(fig3, use_container_width=True)
 
 # ── Full asset table ──────────────────────────────────────────────────────────

@@ -16,10 +16,16 @@ CHART_LAYOUT = dict(
     paper_bgcolor   = CARD_BG,
     plot_bgcolor    = CARD_BG,
     font            = dict(family="sans-serif", color="#e6edf3"),
-    xaxis           = dict(gridcolor="#21262d", showgrid=True),
-    yaxis           = dict(gridcolor="#21262d", showgrid=True),
     margin          = dict(l=40, r=20, t=50, b=40),
 )
+
+# Call this on every figure after update_layout — keeps grid colours consistent
+# without putting xaxis/yaxis inside CHART_LAYOUT (which would conflict any time
+# a chart also passes xaxis= or yaxis= to update_layout).
+def style_axes(fig):
+    fig.update_xaxes(gridcolor="#21262d", showgrid=True)
+    fig.update_yaxes(gridcolor="#21262d", showgrid=True)
+    return fig
 
 
 CSS = """

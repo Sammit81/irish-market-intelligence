@@ -21,7 +21,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from connection import get_snowflake_connection
-from style import apply_global_css, sidebar_info, CHART_LAYOUT, GREEN, RED
+from style import apply_global_css, sidebar_info, CHART_LAYOUT, style_axes, GREEN, RED
 
 st.set_page_config(page_title="Risk Analysis | IMID", page_icon="📉", layout="wide")
 
@@ -114,6 +114,7 @@ fig = px.bar(
 )
 fig.update_traces(textposition="outside")
 fig.update_layout(**CHART_LAYOUT, height=450, legend_title="Risk Level")
+style_axes(fig)
 st.plotly_chart(fig, use_container_width=True)
 
 # ── Correlation heatmap ───────────────────────────────────────────────────────
@@ -144,10 +145,9 @@ fig2 = go.Figure(data=go.Heatmap(
     textfont    = dict(size=10),
     hoverongaps = False,
 ))
-fig2.update_layout(
-    height = 550,
-    xaxis  = dict(tickangle=-45),
-)
+fig2.update_layout(height=550)
+style_axes(fig2)
+fig2.update_xaxes(tickangle=-45)
 st.plotly_chart(fig2, use_container_width=True)
 
 # ── Rolling volatility over time ──────────────────────────────────────────────
@@ -169,9 +169,10 @@ fig3 = px.line(
     labels = {"VOLATILITY_30D": "30-day Volatility (annualised)", "PRICE_DATE": "", "NAME": "Asset"},
 )
 fig3.update_layout(
-    height       = 350,
-    yaxis_tickformat=".0%",
-    hovermode    = "x unified",
-    legend       = dict(orientation="h", y=1.05),
+    height           = 350,
+    yaxis_tickformat = ".0%",
+    hovermode        = "x unified",
+    legend           = dict(orientation="h", y=1.05),
 )
+style_axes(fig3)
 st.plotly_chart(fig3, use_container_width=True)

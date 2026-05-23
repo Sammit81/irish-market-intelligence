@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from connection import get_snowflake_connection
-from style import apply_global_css, sidebar_info, CHART_LAYOUT, GREEN, RED
+from style import apply_global_css, sidebar_info, CHART_LAYOUT, style_axes, GREEN, RED
 
 st.set_page_config(page_title="Compare Assets | IMID", page_icon="⚖️", layout="wide")
 
@@ -114,6 +114,7 @@ fig.update_layout(**CHART_LAYOUT,
     legend=dict(orientation="h", yanchor="bottom", y=1.02),
     hovermode="x unified",
 )
+style_axes(fig)
 st.plotly_chart(fig, use_container_width=True)
 
 # ── Side-by-side comparison table ────────────────────────────────────────────
@@ -170,4 +171,5 @@ fig2.update_layout(**CHART_LAYOUT,
     yaxis_tickformat=".0%",
     coloraxis_showscale=False,
 )
+style_axes(fig2)
 st.plotly_chart(fig2, use_container_width=True)

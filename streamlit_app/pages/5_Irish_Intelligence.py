@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from connection import get_snowflake_connection
-from style import apply_global_css, sidebar_info, CHART_LAYOUT, GREEN
+from style import apply_global_css, sidebar_info, CHART_LAYOUT, style_axes, GREEN
 
 st.set_page_config(page_title="Irish Intelligence | IMID", page_icon="🇮🇪", layout="wide")
 apply_global_css()
@@ -89,6 +89,7 @@ else:
         fig.update_layout(**CHART_LAYOUT, barmode="stack", height=380,
                           yaxis_title="Number of Analysts",
                           legend=dict(orientation="h", y=1.05))
+        style_axes(fig)
         fig.update_xaxes(tickangle=-35)
         st.plotly_chart(fig, use_container_width=True)
 
