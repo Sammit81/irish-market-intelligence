@@ -26,14 +26,11 @@ apply_global_css()
 sidebar_info()
 
 
-@st.cache_resource
-def get_connection():
-    return get_snowflake_connection()
 
 
 @st.cache_data(ttl=21600)
 def load_tickers():
-    conn = get_connection()
+    conn = get_snowflake_connection()
     cur  = conn.cursor()
     cur.execute("SELECT DISTINCT TICKER, NAME FROM FINANCIAL_MARKETS.PUBLIC.FCT_RETURNS_HISTORY ORDER BY NAME")
     return cur.fetch_pandas_all()
@@ -41,7 +38,7 @@ def load_tickers():
 
 @st.cache_data(ttl=21600)
 def load_ohlcv(ticker: str, days: int) -> pd.DataFrame:
-    conn = get_connection()
+    conn = get_snowflake_connection()
     cur  = conn.cursor()
     cur.execute(f"""
         SELECT p.PRICE_DATE, p.OPEN_PRICE, p.HIGH_PRICE, p.LOW_PRICE,

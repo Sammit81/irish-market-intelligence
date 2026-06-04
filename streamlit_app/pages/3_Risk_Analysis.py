@@ -29,14 +29,11 @@ apply_global_css()
 sidebar_info()
 
 
-@st.cache_resource
-def get_connection():
-    return get_snowflake_connection()
 
 
 @st.cache_data(ttl=21600)
 def load_returns(days: int) -> pd.DataFrame:
-    conn = get_connection()
+    conn = get_snowflake_connection()
     cur  = conn.cursor()
     cur.execute(f"""
         SELECT NAME, PRICE_DATE, DAILY_RETURN, VOLATILITY_30D
@@ -50,7 +47,7 @@ def load_returns(days: int) -> pd.DataFrame:
 
 @st.cache_data(ttl=21600)
 def load_summary() -> pd.DataFrame:
-    conn = get_connection()
+    conn = get_snowflake_connection()
     cur  = conn.cursor()
     cur.execute("SELECT NAME, LATEST_PRICE, VOLATILITY_30D, YTD_RETURN, DAILY_RETURN FROM FINANCIAL_MARKETS.PUBLIC.FCT_MARKET_SUMMARY")
     return cur.fetch_pandas_all()

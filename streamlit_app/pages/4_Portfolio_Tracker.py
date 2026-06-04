@@ -22,14 +22,11 @@ st.set_page_config(page_title="Portfolio Tracker | IMID", page_icon="💼", layo
 apply_global_css()
 
 
-@st.cache_resource
-def get_connection():
-    return get_snowflake_connection()
 
 
 @st.cache_data(ttl=21600)
 def load_prices() -> pd.DataFrame:
-    conn = get_connection()
+    conn = get_snowflake_connection()
     cur  = conn.cursor()
     cur.execute("""
         SELECT TICKER, NAME, LATEST_PRICE, DAILY_RETURN, YTD_RETURN, WEEK52_HIGH, WEEK52_LOW
@@ -46,7 +43,7 @@ def load_history_multi(tickers: tuple) -> pd.DataFrame:
     if not tickers:
         return pd.DataFrame()
     ticker_list = ", ".join(f"'{t}'" for t in tickers)
-    conn = get_connection()
+    conn = get_snowflake_connection()
     cur  = conn.cursor()
     cur.execute(f"""
         SELECT TICKER, NAME, PRICE_DATE, CLOSE_PRICE

@@ -21,14 +21,11 @@ st.set_page_config(page_title="Irish Intelligence | IMID", page_icon="🇮🇪",
 apply_global_css()
 
 
-@st.cache_resource
-def get_connection():
-    return get_snowflake_connection()
 
 
 @st.cache_data(ttl=21600)
 def load_intelligence() -> pd.DataFrame:
-    conn = get_connection()
+    conn = get_snowflake_connection()
     cur  = conn.cursor()
     cur.execute("SELECT * FROM FINANCIAL_MARKETS.PUBLIC.FCT_IRISH_INTELLIGENCE ORDER BY NAME")
     df = cur.fetch_pandas_all()

@@ -17,14 +17,11 @@ st.set_page_config(
 apply_global_css()
 
 
-@st.cache_resource
-def get_connection():
-    return get_snowflake_connection()
 
 
 @st.cache_data(ttl=21600)
 def load_summary() -> pd.DataFrame:
-    conn = get_connection()
+    conn = get_snowflake_connection()
     cur  = conn.cursor()
     cur.execute("SELECT * FROM FINANCIAL_MARKETS.PUBLIC.FCT_MARKET_SUMMARY ORDER BY TICKER")
     df = cur.fetch_pandas_all()
@@ -34,7 +31,7 @@ def load_summary() -> pd.DataFrame:
 
 @st.cache_data(ttl=21600)
 def load_history(ticker: str, days: int = 365) -> pd.DataFrame:
-    conn = get_connection()
+    conn = get_snowflake_connection()
     cur  = conn.cursor()
     cur.execute(f"""
         SELECT * FROM FINANCIAL_MARKETS.PUBLIC.FCT_RETURNS_HISTORY
