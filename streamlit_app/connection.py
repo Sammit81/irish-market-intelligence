@@ -39,8 +39,8 @@ def _credentials() -> dict:
 
 
 def get_snowflake_connection(
-    max_retries: int = 3,
-    retry_delay: int = 5,
+    max_retries: int = 4,
+    retry_delay: int = 15,
 ) -> snowflake.connector.SnowflakeConnection:
     """
     Connect to Snowflake, retrying up to max_retries times if the warehouse
