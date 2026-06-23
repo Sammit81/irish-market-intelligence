@@ -102,6 +102,5 @@ jobs:
           SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
           SNOWFLAKE_DATABASE:  ${{ secrets.SNOWFLAKE_DATABASE }}
           SNOWFLAKE_SCHEMA:    ${{ secrets.SNOWFLAKE_SCHEMA }}
-          ALERT_EMAIL:         ${{ secrets.ALERT_EMAIL }}
           SMTP_PASSWORD:       ${{ secrets.SMTP_PASSWORD }}
         run: uv run data_pipeline/price_alerts.py
