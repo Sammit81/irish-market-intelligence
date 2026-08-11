@@ -42,7 +42,13 @@ jobs:
       - name: Write GCP service account key
         env:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
-        run: printf '%s' "$GCP_SA_KEY" > ${{ github.workspace }}/gcp-key.json
+        run: |
+          printf '%s' "$GCP_SA_KEY" > ${{ github.workspace }}/gcp-key.json
+          if [ ! -s ${{ github.workspace }}/gcp-key.json ]; then
+            echo "::error::gcp-key.json is empty — the GCP_SA_KEY repo secret is missing or empty. Set it under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          python3 -c "import json; json.load(open('${{ github.workspace }}/gcp-key.json'))" || { echo "::error::gcp-key.json is not valid JSON — re-check what was pasted into the GCP_SA_KEY secret."; exit 1; }
 
       - name: Fetch latest prices into BigQuery
         run: uv run data_pipeline/fetch_prices.py
