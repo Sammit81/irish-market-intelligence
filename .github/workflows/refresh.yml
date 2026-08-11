@@ -40,7 +40,9 @@ jobs:
         run: uv sync
 
       - name: Write GCP service account key
-        run: echo '${{ secrets.GCP_SA_KEY }}' > ${{ github.workspace }}/gcp-key.json
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: printf '%s' "$GCP_SA_KEY" > ${{ github.workspace }}/gcp-key.json
 
       - name: Fetch latest prices into BigQuery
         run: uv run data_pipeline/fetch_prices.py
@@ -58,9 +60,9 @@ jobs:
               prod:
                 type: bigquery
                 method: service-account
-                project: ${{ secrets.GCP_PROJECT_ID }}
-                dataset: ${{ secrets.BQ_DATASET }}
-                keyfile: ${{ github.workspace }}/gcp-key.json
+                project: $GCP_PROJECT_ID
+                dataset: $BQ_DATASET
+                keyfile: $GOOGLE_APPLICATION_CREDENTIALS
                 location: EU
                 threads: 4
           EOF
