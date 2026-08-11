@@ -3,7 +3,7 @@
 # What this does:
 #   GitHub's servers run this workflow on a schedule, completely
 #   independently of your Mac. It fetches new prices from Yahoo Finance,
-#   loads them into Snowflake, and rebuilds the dbt models.
+#   loads them into BigQuery, and rebuilds the dbt models.
 #   After this runs, anyone visiting the Streamlit dashboard sees fresh data.
 #
 # Schedule: every 6 hours at :00 (00:00, 06:00, 12:00, 18:00 UTC)
@@ -23,6 +23,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/gcp-key.json
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      BQ_DATASET:     ${{ secrets.BQ_DATASET }}
 
     steps:
       - name: Checkout repository
@@ -36,24 +39,13 @@ jobs:
       - name: Install Python dependencies
         run: uv sync
 
-      - name: Fetch latest prices into Snowflake
-        env:
-          SNOWFLAKE_ACCOUNT:   ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_USER:      ${{ secrets.SNOWFLAKE_USER }}
-          SNOWFLAKE_PASSWORD:  ${{ secrets.SNOWFLAKE_PASSWORD }}
-          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
-          SNOWFLAKE_DATABASE:  ${{ secrets.SNOWFLAKE_DATABASE }}
-          SNOWFLAKE_SCHEMA:    ${{ secrets.SNOWFLAKE_SCHEMA }}
+      - name: Write GCP service account key
+        run: echo '${{ secrets.GCP_SA_KEY }}' > ${{ github.workspace }}/gcp-key.json
+
+      - name: Fetch latest prices into BigQuery
         run: uv run data_pipeline/fetch_prices.py
 
       - name: Fetch fundamentals and analyst ratings
-        env:
-          SNOWFLAKE_ACCOUNT:   ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_USER:      ${{ secrets.SNOWFLAKE_USER }}
-          SNOWFLAKE_PASSWORD:  ${{ secrets.SNOWFLAKE_PASSWORD }}
-          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
-          SNOWFLAKE_DATABASE:  ${{ secrets.SNOWFLAKE_DATABASE }}
-          SNOWFLAKE_SCHEMA:    ${{ secrets.SNOWFLAKE_SCHEMA }}
         run: uv run data_pipeline/fetch_fundamentals.py
 
       - name: Create dbt profiles.yml from secrets
@@ -64,14 +56,12 @@ jobs:
             target: prod
             outputs:
               prod:
-                type: snowflake
-                account: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-                user: ${{ secrets.SNOWFLAKE_USER }}
-                password: ${{ secrets.SNOWFLAKE_PASSWORD }}
-                role: ACCOUNTADMIN
-                database: ${{ secrets.SNOWFLAKE_DATABASE }}
-                warehouse: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
-                schema: ${{ secrets.SNOWFLAKE_SCHEMA }}
+                type: bigquery
+                method: service-account
+                project: ${{ secrets.GCP_PROJECT_ID }}
+                dataset: ${{ secrets.BQ_DATASET }}
+                keyfile: ${{ github.workspace }}/gcp-key.json
+                location: EU
                 threads: 4
           EOF
 
@@ -96,11 +86,9 @@ jobs:
 
       - name: Check for price alerts (>5% daily move)
         env:
-          SNOWFLAKE_ACCOUNT:   ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_USER:      ${{ secrets.SNOWFLAKE_USER }}
-          SNOWFLAKE_PASSWORD:  ${{ secrets.SNOWFLAKE_PASSWORD }}
-          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
-          SNOWFLAKE_DATABASE:  ${{ secrets.SNOWFLAKE_DATABASE }}
-          SNOWFLAKE_SCHEMA:    ${{ secrets.SNOWFLAKE_SCHEMA }}
-          SMTP_PASSWORD:       ${{ secrets.SMTP_PASSWORD }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
         run: uv run data_pipeline/price_alerts.py
+
+      - name: Remove GCP service account key
+        if: always()
+        run: rm -f ${{ github.workspace }}/gcp-key.json

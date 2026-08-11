@@ -20,7 +20,7 @@ import numpy as np
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from connection import get_snowflake_connection
+from connection import get_bigquery_connection, qualified
 from style import apply_global_css, sidebar_info, CHART_LAYOUT, style_axes, GREEN, RED
 
 st.set_page_config(page_title="Risk Analysis | IMID", page_icon="📉", layout="wide")
@@ -33,12 +33,12 @@ sidebar_info()
 
 @st.cache_data(ttl=21600)
 def load_returns(days: int) -> pd.DataFrame:
-    conn = get_snowflake_connection()
+    conn = get_bigquery_connection()
     cur  = conn.cursor()
     cur.execute(f"""
         SELECT NAME, PRICE_DATE, DAILY_RETURN, VOLATILITY_30D
-        FROM FINANCIAL_MARKETS.PUBLIC.FCT_RETURNS_HISTORY
-        WHERE PRICE_DATE >= DATEADD('day', -{days}, CURRENT_DATE())
+        FROM {qualified('fct_returns_history')}
+        WHERE PRICE_DATE >= DATE_SUB(CURRENT_DATE(), INTERVAL {days} DAY)
           AND DAILY_RETURN IS NOT NULL
         ORDER BY NAME, PRICE_DATE
     """)
@@ -47,9 +47,9 @@ def load_returns(days: int) -> pd.DataFrame:
 
 @st.cache_data(ttl=21600)
 def load_summary() -> pd.DataFrame:
-    conn = get_snowflake_connection()
+    conn = get_bigquery_connection()
     cur  = conn.cursor()
-    cur.execute("SELECT NAME, LATEST_PRICE, VOLATILITY_30D, YTD_RETURN, DAILY_RETURN FROM FINANCIAL_MARKETS.PUBLIC.FCT_MARKET_SUMMARY")
+    cur.execute(f"SELECT NAME, LATEST_PRICE, VOLATILITY_30D, YTD_RETURN, DAILY_RETURN FROM {qualified('fct_market_summary')}")
     return cur.fetch_pandas_all()
 
 

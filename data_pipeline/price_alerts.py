@@ -23,9 +23,10 @@ from email.mime.text import MIMEText
 from pathlib import Path
 
 from dotenv import load_dotenv
+from google.cloud import bigquery
 
 sys.path.append(str(Path(__file__).parent.parent))
-from data_pipeline.snowflake_client import get_connection
+from data_pipeline.bigquery_client import get_connection, table_ref
 
 load_dotenv()
 
@@ -33,21 +34,21 @@ THRESHOLD = 0.05   # 5% move triggers an alert
 
 
 def check_alerts() -> list[dict]:
-    conn = get_connection()
-    cur  = conn.cursor()
-    cur.execute("""
+    client = get_connection()
+    job_config = bigquery.QueryJobConfig(
+        query_parameters=[bigquery.ScalarQueryParameter("threshold", "FLOAT64", THRESHOLD)]
+    )
+    df = client.query(f"""
         SELECT NAME, TICKER, LATEST_PRICE, DAILY_RETURN
-        FROM FINANCIAL_MARKETS.PUBLIC.FCT_MARKET_SUMMARY
-        WHERE ABS(DAILY_RETURN) >= %s
+        FROM {table_ref('fct_market_summary')}
+        WHERE ABS(DAILY_RETURN) >= @threshold
           AND DAILY_RETURN IS NOT NULL
         ORDER BY ABS(DAILY_RETURN) DESC
-    """, (THRESHOLD,))
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
+    """, job_config=job_config).result().to_dataframe()
+    df.columns = df.columns.str.upper()
     return [
-        {"name": r[0], "ticker": r[1], "price": r[2], "return": r[3]}
-        for r in rows
+        {"name": r.NAME, "ticker": r.TICKER, "price": r.LATEST_PRICE, "return": r.DAILY_RETURN}
+        for _, r in df.iterrows()
     ]
 
 

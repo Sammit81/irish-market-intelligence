@@ -17,7 +17,7 @@ from pathlib import Path
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from connection import get_snowflake_connection
+from connection import get_bigquery_connection, qualified
 from style import apply_global_css, sidebar_info, CHART_LAYOUT, style_axes, GREEN, RED
 
 st.set_page_config(page_title="Stock Deep Dive | IMID", page_icon="🔍", layout="wide")
@@ -30,25 +30,25 @@ sidebar_info()
 
 @st.cache_data(ttl=21600)
 def load_tickers():
-    conn = get_snowflake_connection()
+    conn = get_bigquery_connection()
     cur  = conn.cursor()
-    cur.execute("SELECT DISTINCT TICKER, NAME FROM FINANCIAL_MARKETS.PUBLIC.FCT_RETURNS_HISTORY ORDER BY NAME")
+    cur.execute(f"SELECT DISTINCT TICKER, NAME FROM {qualified('fct_returns_history')} ORDER BY NAME")
     return cur.fetch_pandas_all()
 
 
 @st.cache_data(ttl=21600)
 def load_ohlcv(ticker: str, days: int) -> pd.DataFrame:
-    conn = get_snowflake_connection()
+    conn = get_bigquery_connection()
     cur  = conn.cursor()
     cur.execute(f"""
         SELECT p.PRICE_DATE, p.OPEN_PRICE, p.HIGH_PRICE, p.LOW_PRICE,
                p.CLOSE_PRICE, p.VOLUME, r.DAILY_RETURN, r.MA_7D, r.MA_30D,
                r.VOLATILITY_30D, r.CUMULATIVE_RETURN
-        FROM FINANCIAL_MARKETS.PUBLIC.STG_PRICES p
-        JOIN FINANCIAL_MARKETS.PUBLIC.FCT_RETURNS_HISTORY r
+        FROM {qualified('stg_prices')} p
+        JOIN {qualified('fct_returns_history')} r
           ON p.TICKER = r.TICKER AND p.PRICE_DATE = r.PRICE_DATE
         WHERE p.TICKER = '{ticker}'
-          AND p.PRICE_DATE >= DATEADD('day', -{days}, CURRENT_DATE())
+          AND p.PRICE_DATE >= DATE_SUB(CURRENT_DATE(), INTERVAL {days} DAY)
         ORDER BY p.PRICE_DATE
     """)
     return cur.fetch_pandas_all()

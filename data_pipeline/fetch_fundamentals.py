@@ -5,7 +5,7 @@ What this collects per ticker:
   - Market cap, PE ratio, dividend yield, EPS, revenue, sector
   - Analyst recommendation consensus (buy/hold/sell counts)
 
-Stored in Snowflake: RAW_FUNDAMENTALS
+Stored in BigQuery: RAW_FUNDAMENTALS
 Updated daily via the refresh workflow.
 
 Run from project root:
@@ -18,13 +18,15 @@ from datetime import date
 import pandas as pd
 import yfinance as yf
 from dotenv import load_dotenv
-from snowflake.connector.pandas_tools import write_pandas
+from google.cloud import bigquery
 
 sys.path.append(str(Path(__file__).parent.parent))
 from data_pipeline.tickers import ALL_TICKERS
-from data_pipeline.snowflake_client import get_connection
+from data_pipeline.bigquery_client import get_connection, table_ref
 
 load_dotenv()
+
+TABLE_NAME = "RAW_FUNDAMENTALS"
 
 
 def fetch_info(ticker: str, name: str) -> dict:
@@ -76,34 +78,33 @@ def fetch_info(ticker: str, name: str) -> dict:
 
 
 def main():
-    print("Connecting to Snowflake...")
-    conn = get_connection()
-    cur  = conn.cursor()
+    print("Connecting to BigQuery...")
+    client = get_connection()
 
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS RAW_FUNDAMENTALS (
-            TICKER            VARCHAR,
-            NAME              VARCHAR,
+    client.query(f"""
+        CREATE TABLE IF NOT EXISTS {table_ref(TABLE_NAME)} (
+            TICKER            STRING,
+            NAME              STRING,
             FETCH_DATE        DATE,
-            MARKET_CAP        FLOAT,
-            PE_RATIO          FLOAT,
-            FORWARD_PE        FLOAT,
-            EPS               FLOAT,
-            DIVIDEND_YIELD    FLOAT,
-            REVENUE           FLOAT,
-            PROFIT_MARGIN     FLOAT,
-            SECTOR            VARCHAR,
-            INDUSTRY          VARCHAR,
-            COUNTRY           VARCHAR,
+            MARKET_CAP        FLOAT64,
+            PE_RATIO          FLOAT64,
+            FORWARD_PE        FLOAT64,
+            EPS               FLOAT64,
+            DIVIDEND_YIELD    FLOAT64,
+            REVENUE           FLOAT64,
+            PROFIT_MARGIN     FLOAT64,
+            SECTOR            STRING,
+            INDUSTRY          STRING,
+            COUNTRY           STRING,
             EMPLOYEES         INTEGER,
-            DESCRIPTION       VARCHAR(500),
+            DESCRIPTION       STRING,
             ANALYST_STRONG_BUY  INTEGER,
             ANALYST_BUY         INTEGER,
             ANALYST_HOLD        INTEGER,
             ANALYST_SELL        INTEGER,
             ANALYST_STRONG_SELL INTEGER
         )
-    """)
+    """).result()
 
     rows = []
     for ticker, name in ALL_TICKERS.items():
@@ -114,15 +115,42 @@ def main():
 
     df = pd.DataFrame(rows)
     df.columns = [c.upper() for c in df.columns]
+    df["FETCH_DATE"] = pd.to_datetime(df["FETCH_DATE"]).dt.date
 
-    cur.execute("DELETE FROM RAW_FUNDAMENTALS WHERE FETCH_DATE = CURRENT_DATE()")
+    client.query(f"DELETE FROM {table_ref(TABLE_NAME)} WHERE FETCH_DATE = CURRENT_DATE()").result()
 
-    write_pandas(conn, df, "RAW_FUNDAMENTALS", overwrite=False)
-    (n,) = cur.execute("SELECT COUNT(*) FROM RAW_FUNDAMENTALS WHERE FETCH_DATE = CURRENT_DATE()").fetchone()
-    print(f"\nLoaded {n} rows → RAW_FUNDAMENTALS")
+    job_config = bigquery.LoadJobConfig(
+        write_disposition="WRITE_APPEND",
+        schema=[
+            bigquery.SchemaField("TICKER", "STRING"),
+            bigquery.SchemaField("NAME", "STRING"),
+            bigquery.SchemaField("FETCH_DATE", "DATE"),
+            bigquery.SchemaField("MARKET_CAP", "FLOAT64"),
+            bigquery.SchemaField("PE_RATIO", "FLOAT64"),
+            bigquery.SchemaField("FORWARD_PE", "FLOAT64"),
+            bigquery.SchemaField("EPS", "FLOAT64"),
+            bigquery.SchemaField("DIVIDEND_YIELD", "FLOAT64"),
+            bigquery.SchemaField("REVENUE", "FLOAT64"),
+            bigquery.SchemaField("PROFIT_MARGIN", "FLOAT64"),
+            bigquery.SchemaField("SECTOR", "STRING"),
+            bigquery.SchemaField("INDUSTRY", "STRING"),
+            bigquery.SchemaField("COUNTRY", "STRING"),
+            bigquery.SchemaField("EMPLOYEES", "INTEGER"),
+            bigquery.SchemaField("DESCRIPTION", "STRING"),
+            bigquery.SchemaField("ANALYST_STRONG_BUY", "INTEGER"),
+            bigquery.SchemaField("ANALYST_BUY", "INTEGER"),
+            bigquery.SchemaField("ANALYST_HOLD", "INTEGER"),
+            bigquery.SchemaField("ANALYST_SELL", "INTEGER"),
+            bigquery.SchemaField("ANALYST_STRONG_SELL", "INTEGER"),
+        ],
+    )
+    job = client.load_table_from_dataframe(df, table_ref(TABLE_NAME).strip("`"), job_config=job_config)
+    job.result()
 
-    cur.close()
-    conn.close()
+    (row,) = client.query(
+        f"SELECT COUNT(*) AS N FROM {table_ref(TABLE_NAME)} WHERE FETCH_DATE = CURRENT_DATE()"
+    ).result()
+    print(f"\nLoaded {row.N} rows → {TABLE_NAME}")
 
 
 if __name__ == "__main__":

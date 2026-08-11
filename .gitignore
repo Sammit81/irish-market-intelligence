@@ -4,6 +4,10 @@
 __pycache__/
 *.pyc
 
+# GCP service account keys
+*.json
+!.devcontainer/*.json
+
 # dbt
 dbt_project/target/
 dbt_project/dbt_packages/

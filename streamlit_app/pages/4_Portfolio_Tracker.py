@@ -15,7 +15,7 @@ import plotly.graph_objects as go
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from connection import get_snowflake_connection
+from connection import get_bigquery_connection, qualified
 from style import apply_global_css, sidebar_info, CHART_LAYOUT, style_axes, GREEN, RED
 
 st.set_page_config(page_title="Portfolio Tracker | IMID", page_icon="💼", layout="wide")
@@ -26,11 +26,11 @@ apply_global_css()
 
 @st.cache_data(ttl=21600)
 def load_prices() -> pd.DataFrame:
-    conn = get_snowflake_connection()
+    conn = get_bigquery_connection()
     cur  = conn.cursor()
-    cur.execute("""
+    cur.execute(f"""
         SELECT TICKER, NAME, LATEST_PRICE, DAILY_RETURN, YTD_RETURN, WEEK52_HIGH, WEEK52_LOW
-        FROM FINANCIAL_MARKETS.PUBLIC.FCT_MARKET_SUMMARY
+        FROM {qualified('fct_market_summary')}
         ORDER BY NAME
     """)
     df = cur.fetch_pandas_all()
@@ -43,13 +43,13 @@ def load_history_multi(tickers: tuple) -> pd.DataFrame:
     if not tickers:
         return pd.DataFrame()
     ticker_list = ", ".join(f"'{t}'" for t in tickers)
-    conn = get_snowflake_connection()
+    conn = get_bigquery_connection()
     cur  = conn.cursor()
     cur.execute(f"""
         SELECT TICKER, NAME, PRICE_DATE, CLOSE_PRICE
-        FROM FINANCIAL_MARKETS.PUBLIC.FCT_RETURNS_HISTORY
+        FROM {qualified('fct_returns_history')}
         WHERE TICKER IN ({ticker_list})
-          AND PRICE_DATE >= DATEADD('day', -365, CURRENT_DATE())
+          AND PRICE_DATE >= DATE_SUB(CURRENT_DATE(), INTERVAL 365 DAY)
         ORDER BY TICKER, PRICE_DATE
     """)
     df = cur.fetch_pandas_all()

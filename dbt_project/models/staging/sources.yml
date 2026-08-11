@@ -5,8 +5,7 @@ version: 2
 
 sources:
   - name: raw
-    database: FINANCIAL_MARKETS
-    schema: PUBLIC
+    schema: "{{ env_var('BQ_DATASET') }}"
     tables:
       - name: RAW_PRICES
         description: "Raw OHLCV price data fetched from Yahoo Finance via yfinance"
@@ -17,3 +16,10 @@ sources:
             description: "Trading date"
           - name: CLOSE
             description: "Adjusted closing price"
+      - name: RAW_FUNDAMENTALS
+        description: "Raw company fundamentals and analyst ratings fetched from Yahoo Finance"
+        columns:
+          - name: TICKER
+            description: "Yahoo Finance ticker symbol"
+          - name: FETCH_DATE
+            description: "Date fundamentals were fetched"

@@ -5,7 +5,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from connection import get_snowflake_connection
+from connection import get_bigquery_connection, qualified
 from style import apply_global_css, sidebar_info, CHART_LAYOUT, style_axes, GREEN, RED
 
 st.set_page_config(
@@ -21,9 +21,9 @@ apply_global_css()
 
 @st.cache_data(ttl=21600)
 def load_summary() -> pd.DataFrame:
-    conn = get_snowflake_connection()
+    conn = get_bigquery_connection()
     cur  = conn.cursor()
-    cur.execute("SELECT * FROM FINANCIAL_MARKETS.PUBLIC.FCT_MARKET_SUMMARY ORDER BY TICKER")
+    cur.execute(f"SELECT * FROM {qualified('fct_market_summary')} ORDER BY TICKER")
     df = cur.fetch_pandas_all()
     cur.close()
     return df
@@ -31,12 +31,12 @@ def load_summary() -> pd.DataFrame:
 
 @st.cache_data(ttl=21600)
 def load_history(ticker: str, days: int = 365) -> pd.DataFrame:
-    conn = get_snowflake_connection()
+    conn = get_bigquery_connection()
     cur  = conn.cursor()
     cur.execute(f"""
-        SELECT * FROM FINANCIAL_MARKETS.PUBLIC.FCT_RETURNS_HISTORY
+        SELECT * FROM {qualified('fct_returns_history')}
         WHERE TICKER = '{ticker}'
-          AND PRICE_DATE >= DATEADD('day', -{days}, CURRENT_DATE())
+          AND PRICE_DATE >= DATE_SUB(CURRENT_DATE(), INTERVAL {days} DAY)
         ORDER BY PRICE_DATE
     """)
     df = cur.fetch_pandas_all()
@@ -53,7 +53,7 @@ sidebar_info(str(last_date))
 # ── Header ────────────────────────────────────────────────────────────────────
 
 st.markdown("## 📈 Irish Market Intelligence Dashboard")
-st.caption("Live data · Yahoo Finance · Snowflake · dbt · Updated daily")
+st.caption("Live data · Yahoo Finance · BigQuery · dbt · Updated daily")
 st.divider()
 
 if df.empty:

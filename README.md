@@ -1,6 +1,6 @@
 # Irish Market Intelligence Dashboard
 
-A live financial markets dashboard tracking 28 assets across Irish, European, and US markets. Data is pulled daily from Yahoo Finance, stored and transformed in Snowflake via dbt, and served through a Streamlit web app.
+A live financial markets dashboard tracking 28 assets across Irish, European, and US markets. Data is pulled daily from Yahoo Finance, stored and transformed in BigQuery via dbt, and served through a Streamlit web app.
 
 **Live dashboard**: [irish-market-intelligence.streamlit.app](https://irish-market-intelligence-ngkorhtqqvlho8qdmrsqfs.streamlit.app)
 
@@ -8,7 +8,7 @@ A live financial markets dashboard tracking 28 assets across Irish, European, an
 
 ## What makes this different from static portfolio projects
 
-The data updates automatically every 6 hours via GitHub Actions (00:00, 06:00, 12:00, 18:00 UTC). The pipeline fetches fresh prices from Yahoo Finance, loads them into Snowflake, runs the dbt transformation layer, and the dashboard reflects current market conditions without any manual work. This is what a production analytics pipeline looks like at a smaller scale.
+The data updates automatically every 6 hours via GitHub Actions (00:00, 06:00, 12:00, 18:00 UTC). The pipeline fetches fresh prices from Yahoo Finance, loads them into BigQuery, runs the dbt transformation layer, and the dashboard reflects current market conditions without any manual work. This is what a production analytics pipeline looks like at a smaller scale.
 
 ---
 
@@ -18,7 +18,7 @@ The data updates automatically every 6 hours via GitHub Actions (00:00, 06:00, 1
 Yahoo Finance (yfinance)
     │  Fetches OHLCV prices daily for 28 tickers
     ▼
-Snowflake — RAW_PRICES
+BigQuery — RAW_PRICES
     │  One row per ticker per trading day
     ▼
 dbt transformation layer
@@ -89,7 +89,7 @@ Colour-coded volatility ranking (🟢 Low / 🟡 Medium / 🔴 High). Correlatio
 | Tool | Role | Why |
 |------|------|-----|
 | **yfinance** | Data source | Free Yahoo Finance API, no key needed. Incremental loads — only fetches new data on each run. |
-| **Snowflake** | Cloud warehouse | Industry standard in Dublin. Native Streamlit connector, scales without configuration. |
+| **BigQuery** | Cloud warehouse | Google's flagship data warehouse — heavily used across Dublin's data teams (Google's European HQ is here). Always-free tier (1TB queries/month, 10GB storage), no trial expiry. |
 | **dbt** | Transformation | Replaces manual SQL scripts. Manages dependencies, enables testing, generates lineage documentation. Every mart is a tested, documented model. |
 | **Streamlit** | Web app | Write Python, get an interactive web app. Free deployment on Streamlit Cloud with a permanent public URL. |
 | **GitHub Actions** | Automation | Scheduled workflow runs `fetch_prices.py` + `dbt run` every 6 hours. No manual work needed to keep data current. |
@@ -98,7 +98,7 @@ Colour-coded volatility ranking (🟢 Low / 🟡 Medium / 🔴 High). Correlatio
 
 ## Setup (run locally)
 
-**Prerequisites**: Python 3.9+, `uv`, Snowflake account, Kaggle account (for dataset).
+**Prerequisites**: Python 3.9+, `uv`, a Google Cloud project with BigQuery enabled.
 
 ```bash
 # Install dependencies
@@ -106,21 +106,32 @@ uv sync
 
 # Configure credentials
 cp .env.example .env
-# Fill in SNOWFLAKE_* values in .env
+# Fill in GCP_PROJECT_ID, BQ_DATASET, and GOOGLE_APPLICATION_CREDENTIALS in .env
+# (GOOGLE_APPLICATION_CREDENTIALS points at your service account JSON key file)
 
-# Create FINANCIAL_MARKETS database in Snowflake, then:
 uv run data_pipeline/fetch_prices.py   # load 2 years of price history
+uv run data_pipeline/fetch_fundamentals.py
 
-# Run dbt models
-cd dbt_project
-dbt run
+# Run dbt models — dbt doesn't read .env automatically, so export the vars first
+# and point it at the profiles.yml checked into dbt_project/ (not the ~/.dbt default)
+export $(grep -v '^#' .env | xargs) DBT_PROFILES_DIR=./dbt_project
+cd dbt_project && dbt run && dbt test && cd ..
 
 # Launch dashboard locally
-cd ..
 uv run streamlit run streamlit_app/app.py
 ```
 
 Open `http://localhost:8501`.
+
+### One-time GCP setup
+
+1. Create a GCP project at [console.cloud.google.com](https://console.cloud.google.com) and enable the **BigQuery API**.
+2. Create a BigQuery dataset named `FINANCIAL_MARKETS` (Data set location: `EU`).
+3. Create a service account (**IAM & Admin → Service Accounts**) with the **BigQuery Data Editor** and **BigQuery Job User** roles, then create a JSON key for it and download it as `gcp-key.json` in the project root (already gitignored).
+   - If key creation is blocked by an org policy (`iam.disableServiceAccountKeyCreation` / `iam.managed.disableServiceAccountKeyCreation` — common on new free-trial projects), override both the legacy **and** managed versions of that constraint to "Not enforced" under **IAM & Admin → Organization Policies** for the project.
+4. Set `GCP_PROJECT_ID`, `BQ_DATASET=FINANCIAL_MARKETS`, and `GOOGLE_APPLICATION_CREDENTIALS=./gcp-key.json` in `.env`.
+
+**Note on column casing**: unlike Snowflake, BigQuery doesn't auto-uppercase unquoted identifiers, and dbt's table materialization doesn't reliably honor case-only rename aliases (e.g. `ticker AS TICKER` can silently stay lowercase in the materialized table). `streamlit_app/connection.py` normalises every result set to uppercase columns after querying — if you add a new query path that bypasses that adapter, either route it through `connection.py` or uppercase the resulting DataFrame's columns yourself.
 
 ---
 

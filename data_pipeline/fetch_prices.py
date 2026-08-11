@@ -1,9 +1,9 @@
 """
-Fetch historical and latest price data from Yahoo Finance → Snowflake.
+Fetch historical and latest price data from Yahoo Finance → BigQuery.
 
 What this does and why:
   - yfinance pulls OHLCV (Open, High, Low, Close, Volume) data for each ticker
-  - We store it in Snowflake as RAW_PRICES — one row per ticker per day
+  - We store it in BigQuery as RAW_PRICES — one row per ticker per day
   - On first run it fetches 2 years of history
   - On subsequent runs it fetches only new data (incremental load)
   - This is what makes the project dynamic — run this daily and the dashboard
@@ -19,12 +19,11 @@ from datetime import datetime, timedelta
 import pandas as pd
 import yfinance as yf
 from dotenv import load_dotenv
-import snowflake.connector
-from snowflake.connector.pandas_tools import write_pandas
+from google.cloud import bigquery
 
 sys.path.append(str(Path(__file__).parent.parent))
 from data_pipeline.tickers import ALL_TICKERS
-from data_pipeline.snowflake_client import get_connection
+from data_pipeline.bigquery_client import get_connection, table_ref
 
 load_dotenv()
 
@@ -32,20 +31,17 @@ HISTORY_DAYS = 730   # 2 years on first run
 TABLE_NAME   = "RAW_PRICES"
 
 
-def get_last_loaded_date(conn) -> dict[str, str]:
+def get_last_loaded_date(client: bigquery.Client) -> dict[str, str]:
     """Return the most recent date loaded per ticker — for incremental loads."""
-    cur = conn.cursor()
     try:
-        cur.execute(f"""
-            SELECT TICKER, MAX(PRICE_DATE)
-            FROM {TABLE_NAME}
+        rows = client.query(f"""
+            SELECT TICKER, MAX(PRICE_DATE) AS MAX_DATE
+            FROM {table_ref(TABLE_NAME)}
             GROUP BY TICKER
-        """)
-        return {row[0]: row[1] for row in cur.fetchall()}
+        """).result()
+        return {row.TICKER: row.MAX_DATE for row in rows}
     except Exception:
         return {}
-    finally:
-        cur.close()
 
 
 def fetch_ticker(ticker: str, start: str, end: str) -> pd.DataFrame:
@@ -73,28 +69,25 @@ def fetch_ticker(ticker: str, start: str, end: str) -> pd.DataFrame:
 
 
 def main():
-    print("Connecting to Snowflake...")
-    conn = get_connection()
+    print("Connecting to BigQuery...")
+    client = get_connection()
 
     # Create table if it doesn't exist
-    cur = conn.cursor()
-    cur.execute(f"""
-        CREATE TABLE IF NOT EXISTS {TABLE_NAME} (
-            TICKER     VARCHAR,
-            NAME       VARCHAR,
+    client.query(f"""
+        CREATE TABLE IF NOT EXISTS {table_ref(TABLE_NAME)} (
+            TICKER     STRING,
+            NAME       STRING,
             PRICE_DATE DATE,
-            OPEN       FLOAT,
-            HIGH       FLOAT,
-            LOW        FLOAT,
-            CLOSE      FLOAT,
-            VOLUME     FLOAT,
-            LOADED_AT  TIMESTAMP DEFAULT CURRENT_TIMESTAMP(),
-            PRIMARY KEY (TICKER, PRICE_DATE)
+            OPEN       FLOAT64,
+            HIGH       FLOAT64,
+            LOW        FLOAT64,
+            CLOSE      FLOAT64,
+            VOLUME     FLOAT64,
+            LOADED_AT  TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
         )
-    """)
-    cur.close()
+    """).result()
 
-    last_dates = get_last_loaded_date(conn)
+    last_dates = get_last_loaded_date(client)
     end_date   = datetime.today().strftime("%Y-%m-%d")
     all_frames = []
 
@@ -121,25 +114,38 @@ def main():
 
     if not all_frames:
         print("No new data to load.")
-        conn.close()
         return
 
     combined = pd.concat(all_frames, ignore_index=True)
 
     # Upsert: delete existing rows for the same ticker+date then insert
-    cur = conn.cursor()
     for ticker in combined["TICKER"].unique():
         dates = combined[combined["TICKER"] == ticker]["PRICE_DATE"].tolist()
         dates_str = ", ".join(f"'{d}'" for d in dates)
-        cur.execute(f"""
-            DELETE FROM {TABLE_NAME}
+        client.query(f"""
+            DELETE FROM {table_ref(TABLE_NAME)}
             WHERE TICKER = '{ticker}' AND PRICE_DATE IN ({dates_str})
-        """)
-    cur.close()
+        """).result()
 
-    success, _, nrows, _ = write_pandas(conn, combined, TABLE_NAME, overwrite=False)
-    print(f"\nLoaded {nrows:,} rows → {TABLE_NAME}")
-    conn.close()
+    load_df = combined.copy()
+    load_df["PRICE_DATE"] = pd.to_datetime(load_df["PRICE_DATE"]).dt.date
+
+    job_config = bigquery.LoadJobConfig(
+        write_disposition="WRITE_APPEND",
+        schema=[
+            bigquery.SchemaField("TICKER", "STRING"),
+            bigquery.SchemaField("NAME", "STRING"),
+            bigquery.SchemaField("PRICE_DATE", "DATE"),
+            bigquery.SchemaField("OPEN", "FLOAT64"),
+            bigquery.SchemaField("HIGH", "FLOAT64"),
+            bigquery.SchemaField("LOW", "FLOAT64"),
+            bigquery.SchemaField("CLOSE", "FLOAT64"),
+            bigquery.SchemaField("VOLUME", "FLOAT64"),
+        ],
+    )
+    job = client.load_table_from_dataframe(load_df, table_ref(TABLE_NAME).strip("`"), job_config=job_config)
+    job.result()
+    print(f"\nLoaded {len(combined):,} rows → {TABLE_NAME}")
 
 
 if __name__ == "__main__":

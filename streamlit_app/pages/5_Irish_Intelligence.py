@@ -14,7 +14,7 @@ import yfinance as yf
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from connection import get_snowflake_connection
+from connection import get_bigquery_connection, qualified
 from style import apply_global_css, sidebar_info, CHART_LAYOUT, style_axes, GREEN
 
 st.set_page_config(page_title="Irish Intelligence | IMID", page_icon="🇮🇪", layout="wide")
@@ -25,9 +25,9 @@ apply_global_css()
 
 @st.cache_data(ttl=21600)
 def load_intelligence() -> pd.DataFrame:
-    conn = get_snowflake_connection()
+    conn = get_bigquery_connection()
     cur  = conn.cursor()
-    cur.execute("SELECT * FROM FINANCIAL_MARKETS.PUBLIC.FCT_IRISH_INTELLIGENCE ORDER BY NAME")
+    cur.execute(f"SELECT * FROM {qualified('fct_irish_intelligence')} ORDER BY NAME")
     df = cur.fetch_pandas_all()
     cur.close()
     return df

@@ -6,7 +6,7 @@
 #   statements, dbt figures out the order to run them, adds tests, and
 #   generates documentation automatically.
 #
-# Every model (SQL file) in dbt becomes a table or view in Snowflake.
+# Every model (SQL file) in dbt becomes a table or view in BigQuery.
 
 name: "financial_markets"
 version: "1.0.0"

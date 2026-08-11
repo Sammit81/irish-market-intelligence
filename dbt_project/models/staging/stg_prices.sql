@@ -8,12 +8,12 @@
 SELECT
     TICKER,
     NAME,
-    PRICE_DATE::DATE                        AS price_date,
-    ROUND(OPEN::FLOAT, 4)                   AS open_price,
-    ROUND(HIGH::FLOAT, 4)                   AS high_price,
-    ROUND(LOW::FLOAT, 4)                    AS low_price,
-    ROUND(CLOSE::FLOAT, 4)                  AS close_price,
-    VOLUME::BIGINT                          AS volume
+    CAST(PRICE_DATE AS DATE)                AS PRICE_DATE,
+    ROUND(CAST(OPEN AS FLOAT64), 4)         AS OPEN_PRICE,
+    ROUND(CAST(HIGH AS FLOAT64), 4)         AS HIGH_PRICE,
+    ROUND(CAST(LOW AS FLOAT64), 4)          AS LOW_PRICE,
+    ROUND(CAST(CLOSE AS FLOAT64), 4)        AS CLOSE_PRICE,
+    CAST(VOLUME AS INT64)                   AS VOLUME
 FROM {{ source('raw', 'RAW_PRICES') }}
 WHERE CLOSE IS NOT NULL
   AND CLOSE > 0

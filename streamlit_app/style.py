@@ -63,7 +63,7 @@ def sidebar_info(last_updated: str = None):
     """Standard sidebar for every page."""
     with st.sidebar:
         st.markdown("## 🇮🇪 Irish Market Intelligence")
-        st.caption("Live data · Snowflake · dbt")
+        st.caption("Live data · BigQuery · dbt")
         st.divider()
         st.markdown("**Pages**")
         st.markdown("📈 Market Overview")
@@ -74,5 +74,5 @@ def sidebar_info(last_updated: str = None):
         if last_updated:
             st.caption(f"Last updated: {last_updated}")
         st.caption("Data: Yahoo Finance via yfinance")
-        st.caption("Warehouse: Snowflake")
+        st.caption("Warehouse: BigQuery")
         st.caption("Models: dbt")
