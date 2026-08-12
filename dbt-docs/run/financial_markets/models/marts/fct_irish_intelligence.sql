@@ -2,11 +2,15 @@
   
     
 
-create or replace transient table FINANCIAL_MARKETS.PUBLIC.fct_irish_intelligence
+    create or replace table `irish-market-intelligence`.`FINANCIAL_MARKETS`.`fct_irish_intelligence`
+      
     
     
+
     
-    as (-- fct_irish_intelligence: joins fundamentals with latest price data.
+    OPTIONS()
+    as (
+      -- fct_irish_intelligence: joins fundamentals with latest price data.
 -- One row per ticker with everything needed for the intelligence page.
 
 SELECT
@@ -61,12 +65,9 @@ SELECT
         ELSE 'No Rating'
     END AS analyst_consensus
 
-FROM RAW_FUNDAMENTALS f
-LEFT JOIN FINANCIAL_MARKETS.PUBLIC.FCT_MARKET_SUMMARY s
+FROM `irish-market-intelligence`.`FINANCIAL_MARKETS`.`RAW_FUNDAMENTALS` f
+LEFT JOIN `irish-market-intelligence`.`FINANCIAL_MARKETS`.`fct_market_summary` s
     ON f.TICKER = s.TICKER
-WHERE f.FETCH_DATE = (SELECT MAX(FETCH_DATE) FROM RAW_FUNDAMENTALS)
-    )
-;
-
-
+WHERE f.FETCH_DATE = (SELECT MAX(FETCH_DATE) FROM `irish-market-intelligence`.`FINANCIAL_MARKETS`.`RAW_FUNDAMENTALS`)
+    );
   

@@ -5,7 +5,7 @@
 
 
 select price_date
-from FINANCIAL_MARKETS.PUBLIC.stg_prices
+from `irish-market-intelligence`.`FINANCIAL_MARKETS`.`stg_prices`
 where price_date is null
 
 

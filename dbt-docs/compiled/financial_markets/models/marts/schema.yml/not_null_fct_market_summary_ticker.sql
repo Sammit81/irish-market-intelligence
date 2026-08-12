@@ -5,7 +5,7 @@
 
 
 select ticker
-from FINANCIAL_MARKETS.PUBLIC.fct_market_summary
+from `irish-market-intelligence`.`FINANCIAL_MARKETS`.`fct_market_summary`
 where ticker is null
 
 
