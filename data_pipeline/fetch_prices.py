@@ -118,14 +118,20 @@ def main():
 
     combined = pd.concat(all_frames, ignore_index=True)
 
-    # Upsert: delete existing rows for the same ticker+date then insert
-    for ticker in combined["TICKER"].unique():
-        dates = combined[combined["TICKER"] == ticker]["PRICE_DATE"].tolist()
-        dates_str = ", ".join(f"'{d}'" for d in dates)
-        client.query(f"""
-            DELETE FROM {table_ref(TABLE_NAME)}
-            WHERE TICKER = '{ticker}' AND PRICE_DATE IN ({dates_str})
-        """).result()
+    # Upsert: delete existing rows in the date range about to be reloaded, then insert.
+    # BigQuery strictly rate-limits DML mutations per table, so this must be ONE DELETE
+    # statement covering every ticker rather than one DELETE per ticker.
+    min_dates = pd.to_datetime(combined["PRICE_DATE"]).groupby(combined["TICKER"]).min()
+    conditions, params = [], []
+    for i, (ticker, min_date) in enumerate(min_dates.items()):
+        conditions.append(f"(TICKER = @ticker_{i} AND PRICE_DATE >= @date_{i})")
+        params.append(bigquery.ScalarQueryParameter(f"ticker_{i}", "STRING", ticker))
+        params.append(bigquery.ScalarQueryParameter(f"date_{i}", "DATE", min_date.date()))
+
+    client.query(
+        f"DELETE FROM {table_ref(TABLE_NAME)} WHERE {' OR '.join(conditions)}",
+        job_config=bigquery.QueryJobConfig(query_parameters=params),
+    ).result()
 
     load_df = combined.copy()
     load_df["PRICE_DATE"] = pd.to_datetime(load_df["PRICE_DATE"]).dt.date
