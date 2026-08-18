@@ -1,0 +1,16 @@
+# Runtime dependencies for the deployed Streamlit app only — Streamlit Community
+# Cloud's build step reads this file directly instead of pyproject.toml, so it
+# skips dbt-bigquery and its whole toolchain (dbt-core, jinja2, networkx, agate,
+# dbt-adapters, ...), which the deployed app never imports. That was making
+# every cold-start rebuild after sleep noticeably slower than it needed to be.
+#
+# For local dev / the data pipeline / dbt, use `uv sync` against pyproject.toml
+# as usual — this file is Streamlit Cloud-specific.
+streamlit>=1.35.0
+pandas>=2.0.0
+plotly>=5.20.0
+numpy
+yfinance>=0.2.40
+google-cloud-bigquery>=3.25.0
+db-dtypes>=1.2.0
+python-dotenv>=1.2.1
