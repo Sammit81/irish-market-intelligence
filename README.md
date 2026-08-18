@@ -1,6 +1,6 @@
 # Irish Market Intelligence Dashboard
 
-A live financial markets dashboard tracking 28 assets across Irish, European, and US markets. Data is pulled daily from Yahoo Finance, stored and transformed in BigQuery via dbt, and served through a Streamlit web app.
+A live financial markets dashboard tracking 27 assets across Irish, European, and US markets. Data is pulled daily from Yahoo Finance, stored and transformed in BigQuery via dbt, and served through a Streamlit web app.
 
 **Live dashboard**: [irish-market-intelligence.streamlit.app](https://irish-market-intelligence-ngkorhtqqvlho8qdmrsqfs.streamlit.app)
 
@@ -16,7 +16,7 @@ The data updates automatically every 6 hours via GitHub Actions (00:00, 06:00, 1
 
 ```
 Yahoo Finance (yfinance)
-    │  Fetches OHLCV prices daily for 28 tickers
+    │  Fetches OHLCV prices daily for 27 tickers
     ▼
 BigQuery — RAW_PRICES
     │  One row per ticker per trading day
@@ -30,11 +30,13 @@ dbt transformation layer
     │   fct_returns_history  — full price history with cumulative
     │                          returns for charting (table)
     ▼
-Streamlit — 4-page web app
+Streamlit — 6-page web app
     │   Market Overview      — KPI tiles, movers chart, quick chart
     │   Stock Deep Dive      — candlestick, volume, Sharpe ratio
     │   Compare Assets       — normalised growth, risk vs return
     │   Risk Analysis        — volatility ranking, correlation heatmap
+    │   Portfolio Tracker    — user-entered holdings, live P&L
+    │   Irish Intelligence   — analyst ratings, fundamentals, live news
 ```
 
 ---
@@ -81,6 +83,12 @@ Normalised growth chart — all assets start at 100 so performance is directly c
 
 ### Risk Analysis
 Colour-coded volatility ranking (🟢 Low / 🟡 Medium / 🔴 High). Correlation heatmap showing how assets move together — useful for understanding diversification. Rolling 30-day volatility over time.
+
+### Portfolio Tracker
+Enter shares held and buy price for any tracked asset. Live P&L (£) and P&L (%) against current prices, cost basis vs. current value KPIs, a per-position P&L bar chart, and a portfolio-value-over-time chart. Holdings live in browser session state only — nothing is persisted server-side.
+
+### Irish Intelligence
+Analyst consensus (buy/hold/sell breakdown) across Irish stocks, a company fundamentals table (market cap, P/E, dividend yield, margins), and a live news feed pulled directly from Yahoo Finance per selected company.
 
 ---
 
