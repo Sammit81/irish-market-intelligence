@@ -32,3 +32,19 @@ models:
           - not_null
       - name: daily_return
         description: "Daily return — NULL only for the first row per ticker (no previous price)"
+
+  - name: fct_irish_intelligence
+    description: "Fundamentals, analyst ratings, and latest price per ticker for the Irish Intelligence page"
+    columns:
+      - name: ticker
+        description: "Yahoo Finance ticker symbol"
+        data_tests:
+          - not_null
+          - unique
+      - name: name
+        data_tests:
+          - not_null
+      - name: fetch_date
+        description: "Date fundamentals were fetched"
+        data_tests:
+          - not_null

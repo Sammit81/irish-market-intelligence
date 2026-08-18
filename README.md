@@ -137,8 +137,9 @@ Open `http://localhost:8501`.
 
 ## What I'd Do Next
 
-- **dbt tests**: add schema tests (`not_null`, `unique`, `accepted_values`) to catch data quality issues automatically before they reach the dashboard
-- **Price alerts**: email or Slack notification when any Irish stock moves >5% in a day
-- **Portfolio tracker**: let users input their own holdings and track P&L against current prices
-- **dbt documentation**: run `dbt docs generate` and host the lineage graph — shows the full dependency chain from raw data to dashboard
 - **More Irish coverage**: add options data and short interest for Irish stocks to surface sentiment signals
+- **Smurfit Kappa ticker**: `SKG.L` stopped returning data after the 2024 WestRock merger (now trades as Smurfit WestRock) — swap to the new ticker to restore full 28-asset coverage
+- **Test coverage on `int_daily_returns`**: the intermediate layer has no schema tests yet; the marts built on top of it do
+- **Automated pipeline alerting**: GitHub Actions shows failures in the Actions tab, but nothing pushes a notification if a scheduled run fails silently overnight
+
+**Already shipped** (moved out of this list as the project grew): dbt schema tests on every mart, price alerts on >5% daily moves, the portfolio tracker page, and hosted dbt docs via GitHub Pages — all live in the codebase, not just planned.
